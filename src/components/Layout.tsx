@@ -1,6 +1,8 @@
 import { Link, useLocation, useRouter } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Home, Calendar, MessageCircle, User, Search } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { authRepo } from "@/lib/repository";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -40,6 +42,13 @@ export function BottomNav() {
 }
 
 export function TopHeader() {
+  const [currentUser, setCurrentUser] = useState<ReturnType<typeof authRepo.currentUser>>(null);
+  const loc = useLocation();
+
+  useEffect(() => {
+    setCurrentUser(authRepo.currentUser());
+  }, [loc.pathname]);
+
   return (
     <header className="sticky top-0 z-40 glass border-b border-border">
       <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
@@ -65,9 +74,22 @@ export function TopHeader() {
           <Link to="/doctor-auth" className="hidden sm:inline-flex text-xs px-3 py-2 rounded-lg border border-border hover:bg-muted transition font-medium">
             ورود پزشکان
           </Link>
-          <Link to="/auth" className="text-xs px-4 py-2 rounded-lg gradient-primary text-primary-foreground font-semibold shadow-card hover:opacity-95 transition">
-            ورود / ثبت‌نام
-          </Link>
+          {currentUser ? (
+            <Link
+              to="/profile"
+              className="flex items-center gap-2 rounded-xl bg-muted px-2 py-1.5 text-xs font-semibold hover:bg-muted/70 transition"
+              aria-label="پروفایل کاربر"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg gradient-primary text-primary-foreground font-black">
+                {currentUser.username.charAt(0)}
+              </span>
+              <span className="hidden sm:inline max-w-24 truncate">{currentUser.username}</span>
+            </Link>
+          ) : (
+            <Link to="/auth" className="text-xs px-4 py-2 rounded-lg gradient-primary text-primary-foreground font-semibold shadow-card hover:opacity-95 transition">
+              ورود / ثبت‌نام
+            </Link>
+          )}
         </div>
       </div>
     </header>

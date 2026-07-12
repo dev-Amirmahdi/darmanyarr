@@ -6,6 +6,16 @@ import { toFa, formatToman } from "@/lib/persian";
 import { formatJDate, parseJDateKey, toGregorian } from "@/lib/jalali";
 import { CalendarDays, Clock, X, MapPin, Video, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { Appointment } from "@/lib/types";
 
 export const Route = createFileRoute("/appointments")({
@@ -16,19 +26,23 @@ export const Route = createFileRoute("/appointments")({
 function AppointmentsPage() {
   const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
   const [items, setItems] = useState<Appointment[]>([]);
-  const [patient, setPatient] = useState(authRepo.patient());
+  const [patient, setPatient] = useState(authRepo.currentUser());
 
   const load = () => {
-    const p = authRepo.patient();
+    const p = authRepo.currentUser();
     setPatient(p);
     if (!p) return setItems([]);
-    setItems(appointmentsRepo.byPatient(p.phone));
+    setItems(appointmentsRepo.byPatient(p.email));
   };
   useEffect(load, []);
 
   const now = new Date();
-  const upcoming = items.filter((a) => a.status === "confirmed" && new Date(`${gregoriseKey(a.dateKey)}T${a.time}`) >= now);
-  const past = items.filter((a) => a.status !== "confirmed" || new Date(`${gregoriseKey(a.dateKey)}T${a.time}`) < now);
+  const upcoming = items.filter(
+    (a) => a.status === "confirmed" && new Date(`${gregoriseKey(a.dateKey)}T${a.time}`) >= now,
+  );
+  const past = items.filter(
+    (a) => a.status !== "confirmed" || new Date(`${gregoriseKey(a.dateKey)}T${a.time}`) < now,
+  );
   const list = tab === "upcoming" ? upcoming : past;
 
   if (!patient) {
@@ -36,7 +50,12 @@ function AppointmentsPage() {
       <div className="mx-auto max-w-md px-5 py-16 text-center">
         <h1 className="text-2xl font-black mb-2">نوبت‌های من</h1>
         <p className="text-muted-foreground mb-6">برای مشاهده نوبت‌های خود ابتدا وارد شوید.</p>
-        <Link to="/auth" className="inline-block gradient-primary text-primary-foreground px-6 py-3 rounded-xl font-bold shadow-card">ورود / ثبت‌نام</Link>
+        <Link
+          to="/auth"
+          className="inline-block gradient-primary text-primary-foreground px-6 py-3 rounded-xl font-bold shadow-card"
+        >
+          ورود / ثبت‌نام
+        </Link>
       </div>
     );
   }
@@ -46,8 +65,17 @@ function AppointmentsPage() {
       <h1 className="text-2xl md:text-3xl font-black mb-4">نوبت‌های من</h1>
       <div className="flex bg-muted p-1 rounded-xl mb-6 w-fit">
         {(["upcoming", "past"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={cn("px-5 py-2 rounded-lg text-sm font-bold transition", tab === t ? "bg-card shadow-card text-primary" : "text-muted-foreground")}>
-            {t === "upcoming" ? `آینده (${toFa(upcoming.length)})` : `تاریخچه (${toFa(past.length)})`}
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={cn(
+              "px-5 py-2 rounded-lg text-sm font-bold transition",
+              tab === t ? "bg-card shadow-card text-primary" : "text-muted-foreground",
+            )}
+          >
+            {t === "upcoming"
+              ? `آینده (${toFa(upcoming.length)})`
+              : `تاریخچه (${toFa(past.length)})`}
           </button>
         ))}
       </div>
@@ -69,6 +97,8 @@ function AppointmentsPage() {
 }
 
 function AppointmentRow({ a, onChange }: { a: Appointment; onChange: () => void }) {
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [rebookOpen, setRebookOpen] = useState(false);
   const d = doctorsRepo.byId(a.doctorId);
   const sp = d ? specialtiesRepo.byId(d.specialtyId) : undefined;
   const j = parseJDateKey(a.dateKey);
@@ -80,10 +110,21 @@ function AppointmentRow({ a, onChange }: { a: Appointment; onChange: () => void 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold">{d.name}</span>
-            <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-bold",
-              a.status === "confirmed" ? "bg-accent/15 text-accent" :
-              a.status === "cancelled" ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground")}>
-              {a.status === "confirmed" ? "تأیید شده" : a.status === "cancelled" ? "لغو شده" : "انجام شده"}
+            <span
+              className={cn(
+                "text-[10px] px-2 py-0.5 rounded-full font-bold",
+                a.status === "confirmed"
+                  ? "bg-accent/15 text-accent"
+                  : a.status === "cancelled"
+                    ? "bg-destructive/15 text-destructive"
+                    : "bg-muted text-muted-foreground",
+              )}
+            >
+              {a.status === "confirmed"
+                ? "تأیید شده"
+                : a.status === "cancelled"
+                  ? "لغو شده"
+                  : "انجام شده"}
             </span>
           </div>
           <div className="text-xs text-muted-foreground mt-0.5">{sp?.name}</div>
@@ -92,29 +133,70 @@ function AppointmentRow({ a, onChange }: { a: Appointment; onChange: () => void 
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
         <Meta icon={<CalendarDays size={14} />} label={formatJDate(j, { withWeekday: true })} />
         <Meta icon={<Clock size={14} />} label={toFa(a.time)} />
-        <Meta icon={a.type === "online" ? <Video size={14} /> : <User size={14} />} label={a.type === "online" ? "مشاوره آنلاین" : "ویزیت حضوری"} />
+        <Meta
+          icon={a.type === "online" ? <Video size={14} /> : <User size={14} />}
+          label={a.type === "online" ? "مشاوره آنلاین" : "ویزیت حضوری"}
+        />
         <Meta icon={<MapPin size={14} />} label={d.city} />
       </div>
       <div className="mt-3 flex items-center justify-between pt-3 border-t border-border">
-        <span className="text-sm font-bold text-primary">{formatToman(a.type === "online" ? d.onlineFee : d.visitFee)}</span>
+        <span className="text-sm font-bold text-primary">
+          {formatToman(a.type === "online" ? d.onlineFee : d.visitFee)}
+        </span>
         {a.status === "confirmed" && (
           <div className="flex gap-2">
-            <button onClick={() => { if (confirm("این نوبت لغو شود؟")) { appointmentsRepo.cancel(a.id); onChange(); } }}
-              className="text-xs px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive font-bold flex items-center gap-1">
+            <button onClick={() => setCancelOpen(true)}
+              className="text-xs px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive font-bold flex items-center gap-1"
+            >
               <X size={14} /> لغو
             </button>
-            <Link to="/booking/$doctorId" params={{ doctorId: d.id }} className="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary font-bold">
+            <button onClick={() => setRebookOpen(true)}
+              className="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary font-bold"
+            >
               رزرو مجدد
-            </Link>
+            </button>
           </div>
         )}
       </div>
+
+      <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <AlertDialogContent className="max-w-sm rounded-2xl" dir="rtl">
+          <AlertDialogHeader className="text-right">
+            <AlertDialogTitle>از لغو نوبت مطمئن هستید؟</AlertDialogTitle>
+            <AlertDialogDescription>این نوبت لغو می‌شود و امکان بازگردانی آن وجود ندارد.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:space-x-0">
+            <AlertDialogCancel className="rounded-xl">انصراف</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { appointmentsRepo.cancel(a.id); onChange(); }} className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90">بله، لغو کن</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={rebookOpen} onOpenChange={setRebookOpen}>
+        <AlertDialogContent className="max-w-sm rounded-2xl" dir="rtl">
+          <AlertDialogHeader className="text-right">
+            <AlertDialogTitle>رزرو مجدد با {d.name}</AlertDialogTitle>
+            <AlertDialogDescription>می‌خواهید برای این پزشک یک نوبت حضوری جدید انتخاب کنید؟</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:space-x-0">
+            <AlertDialogCancel className="rounded-xl">انصراف</AlertDialogCancel>
+            <AlertDialogAction asChild className="rounded-xl gradient-primary text-primary-foreground hover:opacity-95">
+              <Link to="/booking/$doctorId" params={{ doctorId: d.id }}>ادامه رزرو</Link>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
 function Meta({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return <div className="flex items-center gap-1.5 text-muted-foreground bg-muted rounded-lg px-2.5 py-1.5">{icon}<span className="text-foreground truncate">{label}</span></div>;
+  return (
+    <div className="flex items-center gap-1.5 text-muted-foreground bg-muted rounded-lg px-2.5 py-1.5">
+      {icon}
+      <span className="text-foreground truncate">{label}</span>
+    </div>
+  );
 }
 
 // Convert Jalali key to a Gregorian ISO date string for comparisons.

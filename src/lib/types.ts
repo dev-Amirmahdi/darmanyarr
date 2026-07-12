@@ -66,7 +66,7 @@ export type Article = {
 export type Appointment = {
   id: string;
   doctorId: string;
-  patientId: string; // patient phone
+  patientId: string; // account email for authenticated users, phone for guest bookings
   type: "in-person" | "online";
   dateKey: string; // Jalali yyyy-mm-dd
   time: string; // HH:MM
@@ -92,6 +92,10 @@ export type NotificationItem = {
   kind: "success" | "info" | "warning" | "reminder";
 };
 
+export type DoctorNotification = NotificationItem & {
+  doctorId: string;
+};
+
 export type ChatMessage = {
   id: string;
   from: "me" | "doctor";
@@ -100,10 +104,13 @@ export type ChatMessage = {
   read: boolean;
 };
 
-export type Patient = {
-  firstName: string;
-  lastName: string;
-  phone: string;
+export type AppUser = {
+  username: string;
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
   nationalId?: string;
   age?: number;
   gender?: "male" | "female";

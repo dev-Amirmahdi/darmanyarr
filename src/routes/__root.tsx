@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { BottomNav, TopHeader, useHideChrome } from "@/components/Layout";
+import { Toaster } from "@/components/ui/sonner";
 import { ensureSeeded } from "@/lib/repository";
 import { applyTheme, type Theme } from "@/lib/theme";
 import { KEYS, storage } from "@/lib/storage";
@@ -115,6 +116,7 @@ function AppShell() {
         <Outlet />
       </main>
       {!hide && <BottomNav />}
+      <Toaster position="top-center" dir="rtl" />
     </div>
   );
 }

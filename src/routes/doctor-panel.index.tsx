@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { authRepo, appointmentsRepo, doctorsRepo } from "@/lib/repository";
+import { authRepo, appointmentsRepo, doctorNotificationsRepo, doctorsRepo } from "@/lib/repository";
 import { Avatar } from "@/components/Avatar";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toFa, formatToman } from "@/lib/persian";
 import { FA_MONTHS, FA_WEEKDAYS, jDateKey, parseJDateKey, todayJ, addDaysJ, formatJDate, toGregorian, irWeekdayIndex } from "@/lib/jalali";
-import { CalendarDays, Users, TrendingUp, Bell, LogOut, Clock, DollarSign } from "lucide-react";
+import { CalendarDays, Users, TrendingUp, Bell, LogOut, Clock, DollarSign, UserPlus, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/doctor-panel/")({
@@ -15,11 +16,14 @@ export const Route = createFileRoute("/doctor-panel/")({
 function DoctorPanel() {
   const router = useRouter();
   const [session, setSession] = useState(authRepo.doctor());
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   useEffect(() => { if (!session) router.navigate({ to: "/doctor-auth" }); }, [session, router]);
   if (!session) return null;
 
   const doctor = doctorsRepo.byId(session.doctorId);
   if (!doctor) return null;
+  const doctorNotifications = doctorNotificationsRepo.list(doctor.id);
+  const unreadNotifications = doctorNotifications.filter((notification) => !notification.read).length;
   const all = appointmentsRepo.byDoctor(doctor.id).filter((a) => a.status !== "cancelled");
 
   const today = todayJ();
@@ -45,9 +49,9 @@ function DoctorPanel() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center relative">
+            <button onClick={() => { doctorNotificationsRepo.markAllRead(doctor.id); setNotificationsOpen(true); }} className="h-10 w-10 rounded-xl bg-muted hover:bg-muted/70 flex items-center justify-center relative transition" aria-label="اعلان‌ها">
               <Bell size={18} />
-              <span className="absolute top-2 end-2 h-2 w-2 rounded-full bg-destructive" />
+              {unreadNotifications > 0 && <span className="absolute top-2 end-2 h-2 w-2 rounded-full bg-destructive" />}
             </button>
             <button onClick={() => { authRepo.signOutDoctor(); setSession(null); }} className="h-10 px-3 rounded-xl bg-destructive/10 text-destructive text-sm font-bold flex items-center gap-1">
               <LogOut size={16} /> خروج
@@ -55,6 +59,31 @@ function DoctorPanel() {
           </div>
         </div>
       </header>
+
+      <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+        <DialogContent className="max-w-md rounded-2xl p-0 overflow-hidden" dir="rtl">
+          <DialogHeader className="p-5 pb-3 text-right">
+            <DialogTitle className="flex items-center gap-2"><Bell size={20} className="text-primary" /> اعلان‌ها</DialogTitle>
+            <DialogDescription>آخرین رویدادهای مربوط به نوبت‌های شما</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[55vh] overflow-y-auto px-5 pb-5 space-y-2">
+            {doctorNotifications.length === 0 ? (
+              <div className="rounded-xl bg-muted py-10 text-center text-sm text-muted-foreground">هنوز اعلانی ندارید.</div>
+            ) : doctorNotifications.map((notification) => (
+              <div key={notification.id} className="flex gap-3 rounded-xl border border-border bg-muted/50 p-3">
+                <div className={cn("h-9 w-9 shrink-0 rounded-xl flex items-center justify-center", notification.kind === "warning" ? "bg-destructive/10 text-destructive" : "bg-emerald-500/10 text-emerald-600")}>
+                  {notification.kind === "warning" ? <XCircle size={18} /> : <UserPlus size={18} />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold">{notification.title}</div>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{notification.body}</p>
+                  <time className="mt-2 block text-[10px] text-muted-foreground">{new Date(notification.date).toLocaleString("fa-IR")}</time>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="mx-auto max-w-6xl px-5 py-6 space-y-6">
         {/* Stats */}
