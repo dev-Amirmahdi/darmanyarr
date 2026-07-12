@@ -1,0 +1,28 @@
+# This is an example configuration file
+# To learn more, see the full config.yaml reference: https://docs.continue.dev/reference
+
+name: My Config
+version: 1.0.0
+schema: v1
+
+models:
+  - name: MiniMax M2.7
+    provider: openai
+    model: MiniMaxAI/MiniMax-M2.7
+    apiBase: https://inference.dahl.global/v1
+    apiKey: dahl_9FAyMKF1rk9SV4X719oioQZnTxFjf5nrF
+    roles:
+      - chat
+      - edit
+      - apply
+
+  - name: qwen2.5-coder 7b
+    provider: openai
+    model: qwen2.5-coder:7b
+    apiBase: https://inference.dahl.global/v1
+    apiKey: dahl_9FAyMKF1rk9SV4X719oioQZnTxFjf5nrF
+    roles:
+      - chat
+      - edit
+      - apply
+      - autocomplete
