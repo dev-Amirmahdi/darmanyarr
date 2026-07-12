@@ -1,0 +1,176 @@
+// Repository layer — today reads/writes LocalStorage. Tomorrow: swap for API.
+import { KEYS, storage } from "./storage";
+import { ARTICLES_SEED, SPECIALTIES_SEED, buildClinics, buildDoctors, buildReviews } from "./seed";
+import type { Appointment, Article, ChatMessage, Clinic, Doctor, NotificationItem, Patient, Review, Specialty } from "./types";
+
+export function ensureSeeded(): void {
+  if (storage.get<boolean>(KEYS.seeded, false)) return;
+  const specialties = SPECIALTIES_SEED;
+  const clinics = buildClinics();
+  const doctors = buildDoctors(specialties, clinics);
+  const reviews = buildReviews(doctors);
+  storage.set(KEYS.specialties, specialties);
+  storage.set(KEYS.clinics, clinics);
+  storage.set(KEYS.doctors, doctors);
+  storage.set(KEYS.reviews, reviews);
+  storage.set(KEYS.articles, ARTICLES_SEED);
+  storage.set(KEYS.seeded, true);
+}
+
+/* -------------------- Doctors -------------------- */
+export const doctorsRepo = {
+  list(): Doctor[] { ensureSeeded(); return storage.get<Doctor[]>(KEYS.doctors, []); },
+  byId(id: string): Doctor | undefined { return this.list().find((d) => d.id === id); },
+  bySpecialty(specialtyId: string): Doctor[] { return this.list().filter((d) => d.specialtyId === specialtyId); },
+  online(): Doctor[] { return this.list().filter((d) => d.supportsOnline); },
+  top(limit = 6): Doctor[] { return [...this.list()].sort((a, b) => b.rating - a.rating).slice(0, limit); },
+  popular(limit = 6): Doctor[] { return [...this.list()].sort((a, b) => b.reviewsCount - a.reviewsCount).slice(0, limit); },
+  search(q: string): Doctor[] {
+    const query = q.trim();
+    if (!query) return this.list();
+    return this.list().filter((d) =>
+      d.name.includes(query) || d.city.includes(query) || d.bio.includes(query)
+    );
+  },
+};
+
+/* -------------------- Specialties -------------------- */
+export const specialtiesRepo = {
+  list(): Specialty[] { ensureSeeded(); return storage.get<Specialty[]>(KEYS.specialties, []); },
+  bySlug(slug: string): Specialty | undefined { return this.list().find((s) => s.slug === slug); },
+  byId(id: string): Specialty | undefined { return this.list().find((s) => s.id === id); },
+};
+
+/* -------------------- Clinics -------------------- */
+export const clinicsRepo = {
+  list(): Clinic[] { ensureSeeded(); return storage.get<Clinic[]>(KEYS.clinics, []); },
+  byId(id: string): Clinic | undefined { return this.list().find((c) => c.id === id); },
+};
+
+/* -------------------- Reviews -------------------- */
+export const reviewsRepo = {
+  list(): Review[] { ensureSeeded(); return storage.get<Review[]>(KEYS.reviews, []); },
+  byDoctor(doctorId: string): Review[] { return this.list().filter((r) => r.doctorId === doctorId); },
+  add(r: Review) { const all = this.list(); all.unshift(r); storage.set(KEYS.reviews, all); },
+};
+
+/* -------------------- Articles -------------------- */
+export const articlesRepo = {
+  list(): Article[] { ensureSeeded(); return storage.get<Article[]>(KEYS.articles, []); },
+  byId(id: string): Article | undefined { return this.list().find((a) => a.id === id); },
+};
+
+/* -------------------- Appointments -------------------- */
+export const appointmentsRepo = {
+  list(): Appointment[] { return storage.get<Appointment[]>(KEYS.appointments, []); },
+  byPatient(phone: string): Appointment[] { return this.list().filter((a) => a.patientId === phone); },
+  byDoctor(doctorId: string): Appointment[] { return this.list().filter((a) => a.doctorId === doctorId); },
+  bookedSlots(doctorId: string, dateKey: string): string[] {
+    return this.list()
+      .filter((a) => a.doctorId === doctorId && a.dateKey === dateKey && a.status !== "cancelled")
+      .map((a) => a.time);
+  },
+  patientHasConflict(phone: string, dateKey: string, time: string, ignoreId?: string): boolean {
+    return this.list().some(
+      (a) => a.patientId === phone && a.dateKey === dateKey && a.time === time && a.status !== "cancelled" && a.id !== ignoreId
+    );
+  },
+  create(a: Appointment): { ok: boolean; error?: string } {
+    const all = this.list();
+    if (all.some((x) => x.doctorId === a.doctorId && x.dateKey === a.dateKey && x.time === a.time && x.status !== "cancelled")) {
+      return { ok: false, error: "این ساعت قبلاً رزرو شده است." };
+    }
+    if (this.patientHasConflict(a.patientId, a.dateKey, a.time)) {
+      return { ok: false, error: "شما در همین زمان نوبت دیگری دارید." };
+    }
+    all.unshift(a);
+    storage.set(KEYS.appointments, all);
+    notificationsRepo.add({
+      id: `n-${a.id}`,
+      title: "نوبت شما ثبت شد",
+      body: `نوبت شما با ${a.dateKey} ساعت ${a.time} با موفقیت رزرو گردید.`,
+      date: new Date().toISOString(),
+      read: false,
+      kind: "success",
+    });
+    return { ok: true };
+  },
+  cancel(id: string): void {
+    const all = this.list().map((a) => (a.id === id ? { ...a, status: "cancelled" as const } : a));
+    storage.set(KEYS.appointments, all);
+    notificationsRepo.add({
+      id: `n-cx-${id}-${Date.now()}`,
+      title: "نوبت لغو شد",
+      body: "نوبت شما با موفقیت لغو شد.",
+      date: new Date().toISOString(),
+      read: false,
+      kind: "warning",
+    });
+  },
+  update(id: string, patch: Partial<Pick<Appointment, "dateKey" | "time" | "type">>): { ok: boolean; error?: string } {
+    const all = this.list();
+    const current = all.find((a) => a.id === id);
+    if (!current) return { ok: false, error: "نوبت یافت نشد." };
+    const merged = { ...current, ...patch };
+    const conflict = all.some(
+      (x) => x.id !== id && x.doctorId === current.doctorId && x.dateKey === merged.dateKey && x.time === merged.time && x.status !== "cancelled"
+    );
+    if (conflict) return { ok: false, error: "این ساعت قبلاً رزرو شده است." };
+    if (appointmentsRepo.patientHasConflict(current.patientId, merged.dateKey, merged.time, id)) {
+      return { ok: false, error: "شما در همین زمان نوبت دیگری دارید." };
+    }
+    storage.set(KEYS.appointments, all.map((a) => (a.id === id ? merged : a)));
+    return { ok: true };
+  },
+};
+
+/* -------------------- Notifications -------------------- */
+export const notificationsRepo = {
+  list(): NotificationItem[] { return storage.get<NotificationItem[]>(KEYS.notifications, []); },
+  add(n: NotificationItem) { const all = this.list(); all.unshift(n); storage.set(KEYS.notifications, all.slice(0, 100)); },
+  markAllRead() { storage.set(KEYS.notifications, this.list().map((n) => ({ ...n, read: true }))); },
+};
+
+/* -------------------- Favorites -------------------- */
+export const favoritesRepo = {
+  list(): string[] { return storage.get<string[]>(KEYS.favorites, []); },
+  toggle(doctorId: string): boolean {
+    const all = this.list();
+    const exists = all.includes(doctorId);
+    const next = exists ? all.filter((x) => x !== doctorId) : [...all, doctorId];
+    storage.set(KEYS.favorites, next);
+    return !exists;
+  },
+  has(doctorId: string): boolean { return this.list().includes(doctorId); },
+};
+
+/* -------------------- Recent Doctors -------------------- */
+export const recentDoctorsRepo = {
+  list(): string[] { return storage.get<string[]>(KEYS.recentDoctors, []); },
+  push(doctorId: string) {
+    const all = this.list().filter((x) => x !== doctorId);
+    all.unshift(doctorId);
+    storage.set(KEYS.recentDoctors, all.slice(0, 10));
+  },
+};
+
+/* -------------------- Auth (patient) -------------------- */
+export const authRepo = {
+  patient(): Patient | null { return storage.get<Patient | null>(KEYS.authPatient, null); },
+  setPatient(p: Patient) { storage.set(KEYS.authPatient, p); },
+  signOutPatient() { storage.remove(KEYS.authPatient); },
+  doctor(): { doctorId: string; name: string } | null { return storage.get<{ doctorId: string; name: string } | null>(KEYS.authDoctor, null); },
+  setDoctor(d: { doctorId: string; name: string }) { storage.set(KEYS.authDoctor, d); },
+  signOutDoctor() { storage.remove(KEYS.authDoctor); },
+};
+
+/* -------------------- Chats -------------------- */
+export const chatsRepo = {
+  all(): Record<string, ChatMessage[]> { return storage.get<Record<string, ChatMessage[]>>(KEYS.chats, {}); },
+  get(doctorId: string): ChatMessage[] { return this.all()[doctorId] ?? []; },
+  send(doctorId: string, msg: ChatMessage) {
+    const map = this.all();
+    map[doctorId] = [...(map[doctorId] ?? []), msg];
+    storage.set(KEYS.chats, map);
+  },
+};
