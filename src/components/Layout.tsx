@@ -1,5 +1,6 @@
 import { Link, useLocation, useRouter } from "@tanstack/react-router";
 import { Home, Calendar, MessageCircle, User, Search } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -60,6 +61,7 @@ export function TopHeader() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Link to="/doctor-auth" className="hidden sm:inline-flex text-xs px-3 py-2 rounded-lg border border-border hover:bg-muted transition font-medium">
             ورود پزشکان
           </Link>

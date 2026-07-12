@@ -15,6 +15,10 @@ models:
       - chat
       - edit
       - apply
+      - autocomplete
+    capabilities:
+      - tool_use
+      
 
   - name: qwen2.5-coder 7b
     provider: openai
