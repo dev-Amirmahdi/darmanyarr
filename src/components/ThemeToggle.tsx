@@ -45,7 +45,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={isDark ? "تغییر به حالت روشن" : "تغییر به حالت تاریک"}
       title={isDark ? "حالت روشن" : "حالت تاریک"}
-      className="h-10 w-10 rounded-xl bg-muted hover:bg-muted/70 flex items-center justify-center text-lg transition-all duration-300 ease-in-out hover:scale-105 active:scale-95"
+      className="h-10 w-10 rounded-xl bg-muted hover:bg-muted/70 flex items-center justify-center text-lg transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 cursor-pointer"
     >
       <span className="transition-transform duration-300">
         {isDark ? "☀️" : "🌙"}

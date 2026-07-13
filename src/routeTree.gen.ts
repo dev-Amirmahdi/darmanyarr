@@ -9,11 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as OnlineRouteImport } from './routes/online'
 import { Route as FavoritesRouteImport } from './routes/favorites'
+import { Route as EditProfileRouteImport } from './routes/edit-profile'
+import { Route as DiscountsRouteImport } from './routes/discounts'
 import { Route as AppointmentsRouteImport } from './routes/appointments'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SpecialtiesIndexRouteImport } from './routes/specialties.index'
@@ -27,6 +30,11 @@ import { Route as ChatDoctorIdRouteImport } from './routes/chat.$doctorId'
 import { Route as BookingDoctorIdRouteImport } from './routes/booking.$doctorId'
 import { Route as ArticlesIdRouteImport } from './routes/articles.$id'
 
+const WalletRoute = WalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -50,6 +58,16 @@ const OnlineRoute = OnlineRouteImport.update({
 const FavoritesRoute = FavoritesRouteImport.update({
   id: '/favorites',
   path: '/favorites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditProfileRoute = EditProfileRouteImport.update({
+  id: '/edit-profile',
+  path: '/edit-profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiscountsRoute = DiscountsRouteImport.update({
+  id: '/discounts',
+  path: '/discounts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppointmentsRoute = AppointmentsRouteImport.update({
@@ -116,11 +134,14 @@ const ArticlesIdRoute = ArticlesIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/appointments': typeof AppointmentsRoute
+  '/discounts': typeof DiscountsRoute
+  '/edit-profile': typeof EditProfileRoute
   '/favorites': typeof FavoritesRoute
   '/online': typeof OnlineRoute
   '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/wallet': typeof WalletRoute
   '/articles/$id': typeof ArticlesIdRoute
   '/booking/$doctorId': typeof BookingDoctorIdRoute
   '/chat/$doctorId': typeof ChatDoctorIdRoute
@@ -135,11 +156,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/appointments': typeof AppointmentsRoute
+  '/discounts': typeof DiscountsRoute
+  '/edit-profile': typeof EditProfileRoute
   '/favorites': typeof FavoritesRoute
   '/online': typeof OnlineRoute
   '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/wallet': typeof WalletRoute
   '/articles/$id': typeof ArticlesIdRoute
   '/booking/$doctorId': typeof BookingDoctorIdRoute
   '/chat/$doctorId': typeof ChatDoctorIdRoute
@@ -155,11 +179,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/appointments': typeof AppointmentsRoute
+  '/discounts': typeof DiscountsRoute
+  '/edit-profile': typeof EditProfileRoute
   '/favorites': typeof FavoritesRoute
   '/online': typeof OnlineRoute
   '/profile': typeof ProfileRoute
   '/search': typeof SearchRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/wallet': typeof WalletRoute
   '/articles/$id': typeof ArticlesIdRoute
   '/booking/$doctorId': typeof BookingDoctorIdRoute
   '/chat/$doctorId': typeof ChatDoctorIdRoute
@@ -176,11 +203,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/appointments'
+    | '/discounts'
+    | '/edit-profile'
     | '/favorites'
     | '/online'
     | '/profile'
     | '/search'
     | '/sitemap.xml'
+    | '/wallet'
     | '/articles/$id'
     | '/booking/$doctorId'
     | '/chat/$doctorId'
@@ -195,11 +225,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/appointments'
+    | '/discounts'
+    | '/edit-profile'
     | '/favorites'
     | '/online'
     | '/profile'
     | '/search'
     | '/sitemap.xml'
+    | '/wallet'
     | '/articles/$id'
     | '/booking/$doctorId'
     | '/chat/$doctorId'
@@ -214,11 +247,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/appointments'
+    | '/discounts'
+    | '/edit-profile'
     | '/favorites'
     | '/online'
     | '/profile'
     | '/search'
     | '/sitemap.xml'
+    | '/wallet'
     | '/articles/$id'
     | '/booking/$doctorId'
     | '/chat/$doctorId'
@@ -234,11 +270,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppointmentsRoute: typeof AppointmentsRoute
+  DiscountsRoute: typeof DiscountsRoute
+  EditProfileRoute: typeof EditProfileRoute
   FavoritesRoute: typeof FavoritesRoute
   OnlineRoute: typeof OnlineRoute
   ProfileRoute: typeof ProfileRoute
   SearchRoute: typeof SearchRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  WalletRoute: typeof WalletRoute
   ArticlesIdRoute: typeof ArticlesIdRoute
   BookingDoctorIdRoute: typeof BookingDoctorIdRoute
   ChatDoctorIdRoute: typeof ChatDoctorIdRoute
@@ -253,6 +292,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wallet': {
+      id: '/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof WalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -286,6 +332,20 @@ declare module '@tanstack/react-router' {
       path: '/favorites'
       fullPath: '/favorites'
       preLoaderRoute: typeof FavoritesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/edit-profile': {
+      id: '/edit-profile'
+      path: '/edit-profile'
+      fullPath: '/edit-profile'
+      preLoaderRoute: typeof EditProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/discounts': {
+      id: '/discounts'
+      path: '/discounts'
+      fullPath: '/discounts'
+      preLoaderRoute: typeof DiscountsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/appointments': {
@@ -378,11 +438,14 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppointmentsRoute: AppointmentsRoute,
+  DiscountsRoute: DiscountsRoute,
+  EditProfileRoute: EditProfileRoute,
   FavoritesRoute: FavoritesRoute,
   OnlineRoute: OnlineRoute,
   ProfileRoute: ProfileRoute,
   SearchRoute: SearchRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  WalletRoute: WalletRoute,
   ArticlesIdRoute: ArticlesIdRoute,
   BookingDoctorIdRoute: BookingDoctorIdRoute,
   ChatDoctorIdRoute: ChatDoctorIdRoute,

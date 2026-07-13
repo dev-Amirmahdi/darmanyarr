@@ -133,7 +133,7 @@ function DoctorProfile() {
             )}
             <button
               onClick={() => router.navigate({ to: "/booking/$doctorId", params: { doctorId: doctor.id } })}
-              className="w-full gradient-primary text-primary-foreground rounded-xl py-3 font-bold shadow-card hover:opacity-95 transition"
+              className="w-full gradient-primary text-primary-foreground rounded-xl py-3 font-bold shadow-card hover:opacity-95 transition cursor-pointer"
             >
               رزرو نوبت
             </button>

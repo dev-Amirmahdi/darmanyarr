@@ -35,6 +35,7 @@ export const KEYS = {
   favorites: "med.favorites",
   recentDoctors: "med.recentDoctors",
   appointments: "med.appointments",
+  walletTransactions: "med.wallet.transactions",
   notifications: "med.notifications",
   doctorNotifications: "med.doctorNotifications",
   seeded: "med.seeded.v1",

@@ -24,11 +24,13 @@ export const Route = createFileRoute("/appointments")({
 });
 
 function AppointmentsPage() {
-  const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
+  const [tab, setTab] = useState<"current" | "completed" | "cancelled">("current");
   const [items, setItems] = useState<Appointment[]>([]);
   const [patient, setPatient] = useState(authRepo.currentUser());
 
   const load = () => {
+    appointmentsRepo.refreshStatuses();
+
     const p = authRepo.currentUser();
     setPatient(p);
     if (!p) return setItems([]);
@@ -36,14 +38,39 @@ function AppointmentsPage() {
   };
   useEffect(load, []);
 
+  // const now = new Date();
+  // const upcoming = items.filter(
+  //   (a) => a.status === "confirmed" && new Date(`${gregoriseKey(a.dateKey)}T${a.time}`) >= now,
+  // );
+  // const past = items.filter(
+  //   (a) => a.status !== "confirmed" || new Date(`${gregoriseKey(a.dateKey)}T${a.time}`) < now,
+  // );
+  // const list = tab === "upcoming" ? upcoming : past;
   const now = new Date();
-  const upcoming = items.filter(
-    (a) => a.status === "confirmed" && new Date(`${gregoriseKey(a.dateKey)}T${a.time}`) >= now,
-  );
-  const past = items.filter(
-    (a) => a.status !== "confirmed" || new Date(`${gregoriseKey(a.dateKey)}T${a.time}`) < now,
-  );
-  const list = tab === "upcoming" ? upcoming : past;
+
+const current = items.filter(
+  (a) =>
+    a.status === "confirmed" &&
+    new Date(`${gregoriseKey(a.dateKey)}T${a.time}`) >= now,
+);
+
+const completed = items.filter(
+  (a) =>
+    (a.status === "completed" ||
+      (a.status === "confirmed" &&
+        new Date(`${gregoriseKey(a.dateKey)}T${a.time}`) < now)),
+);
+
+const cancelled = items.filter(
+  (a) => a.status === "cancelled",
+);
+
+const list =
+  tab === "current"
+    ? current
+    : tab === "completed"
+      ? completed
+      : cancelled;
 
   if (!patient) {
     return (
@@ -64,12 +91,12 @@ function AppointmentsPage() {
     <div className="mx-auto max-w-3xl px-5 py-8">
       <h1 className="text-2xl md:text-3xl font-black mb-4">نوبت‌های من</h1>
       <div className="flex bg-muted p-1 rounded-xl mb-6 w-fit">
-        {(["upcoming", "past"] as const).map((t) => (
+        {/* {(["upcoming", "past"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              "px-5 py-2 rounded-lg text-sm font-bold transition",
+              "px-5 py-2 rounded-lg text-sm font-bold transition cursor-pointer",
               tab === t ? "bg-card shadow-card text-primary" : "text-muted-foreground",
             )}
           >
@@ -77,7 +104,25 @@ function AppointmentsPage() {
               ? `آینده (${toFa(upcoming.length)})`
               : `تاریخچه (${toFa(past.length)})`}
           </button>
-        ))}
+        ))} */}
+        {(["current", "completed", "cancelled"] as const).map((t) => (
+        <button
+          key={t}
+          onClick={() => setTab(t)}
+          className={cn(
+            "px-5 py-2 rounded-lg text-sm font-bold transition cursor-pointer",
+            tab === t
+              ? "bg-card shadow-card text-primary"
+              : "text-muted-foreground",
+          )}
+        >
+          {t === "current"
+            ? `جاری (${toFa(current.length)})`
+            : t === "completed"
+              ? `پایان یافته (${toFa(completed.length)})`
+              : `لغو شده (${toFa(cancelled.length)})`}
+        </button>
+      ))}
       </div>
 
       {list.length === 0 ? (
@@ -108,7 +153,7 @@ function AppointmentRow({ a, onChange }: { a: Appointment; onChange: () => void 
       <div className="flex items-center gap-3">
         <Avatar seed={d.avatarSeed} size={56} />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold">{d.name}</span>
             <span
               className={cn(
@@ -126,6 +171,43 @@ function AppointmentRow({ a, onChange }: { a: Appointment; onChange: () => void 
                   ? "لغو شده"
                   : "انجام شده"}
             </span>
+          </div> */}
+          <div className="flex items-center gap-2 flex-wrap">
+
+            <span className="font-bold">
+              {d.name}
+            </span>
+
+            <span
+              className={cn(
+                "text-[10px] px-2 py-0.5 rounded-full font-bold",
+                a.status === "confirmed"
+                  ? "bg-accent/15 text-accent"
+                  : a.status === "cancelled"
+                    ? "bg-destructive/15 text-destructive"
+                    : "bg-primary/15 text-primary",
+              )}
+            >
+              {a.status === "confirmed"
+                ? "جاری"
+                : a.status === "cancelled"
+                  ? "لغو شده"
+                  : "پایان یافته"}
+            </span>
+
+            <span
+              className={cn(
+                "text-[10px] px-2 py-0.5 rounded-full font-bold",
+                a.type === "online"
+                  ? "bg-sky-500/15 text-sky-600 dark:text-sky-400"
+                  : "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+              )}
+            >
+              {a.type === "online"
+                ? "آنلاین"
+                : "حضوری"}
+            </span>
+
           </div>
           <div className="text-xs text-muted-foreground mt-0.5">{sp?.name}</div>
         </div>
@@ -143,15 +225,16 @@ function AppointmentRow({ a, onChange }: { a: Appointment; onChange: () => void 
         <span className="text-sm font-bold text-primary">
           {formatToman(a.type === "online" ? d.onlineFee : d.visitFee)}
         </span>
-        {a.status === "confirmed" && (
+        {a.status === "confirmed" &&
+          new Date(`${gregoriseKey(a.dateKey)}T${a.time}`) >= new Date() && (
           <div className="flex gap-2">
             <button onClick={() => setCancelOpen(true)}
-              className="text-xs px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive font-bold flex items-center gap-1"
+              className="text-xs px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive font-bold flex items-center gap-1 cursor-pointer"
             >
               <X size={14} /> لغو
             </button>
             <button onClick={() => setRebookOpen(true)}
-              className="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary font-bold"
+              className="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary font-bold cursor-pointer"
             >
               رزرو مجدد
             </button>

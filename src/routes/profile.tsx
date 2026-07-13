@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { authRepo, appointmentsRepo, notificationsRepo } from "@/lib/repository";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { toFa } from "@/lib/persian";
-import { User, LogOut, Heart, CalendarDays, Bell, ChevronLeft, Settings } from "lucide-react";
+import { User, LogOut, Heart, CalendarDays, Bell, ChevronLeft, Settings, Wallet } from "lucide-react";
 import type { AppUser } from "@/lib/types";
 
 export const Route = createFileRoute("/profile")({
@@ -58,14 +58,22 @@ function ProfilePage() {
       to: "/appointments",
       badge: toFa(count.apts),
     },
+    {
+      icon: <Wallet size={18} />,
+      label: "کیف پول",
+      to: "/wallet",
+    },
     { icon: <Heart size={18} />, label: "پزشکان مورد علاقه", to: "/favorites" },
     {
       icon: <Bell size={18} />,
-      label: "اعلان‌ها",
-      to: "/appointments",
-      badge: count.notif > 0 ? toFa(count.notif) : undefined,
+      label: "تخفیف‌ها",
+      to: "/discounts",
     },
-    { icon: <Settings size={18} />, label: "تنظیمات", onClick: () => {} },
+    {
+      icon: <Settings size={18} />,
+      label: "ویرایش اطلاعات",
+      to: "/edit-profile",
+    },
   ];
 
   return (
@@ -109,13 +117,13 @@ function ProfilePage() {
       </div>
 
       <div className="mt-6 space-y-3">
-        <ThemeToggle variant="row" />
+        {/* <ThemeToggle variant="row" /> */}
         <button
           onClick={() => {
             authRepo.signOutCurrentUser();
             router.navigate({ to: "/" });
           }}
-          className="w-full flex items-center gap-3 py-3 px-4 rounded-xl bg-destructive/10 text-destructive font-bold hover:bg-destructive/15 transition"
+          className="w-full flex items-center gap-3 py-3 px-4 rounded-xl bg-destructive/10 text-destructive font-bold hover:bg-destructive/15 transition cursor-pointer"
         >
           <LogOut size={18} /> خروج از حساب
         </button>

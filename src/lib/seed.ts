@@ -1,4 +1,5 @@
-import type { Article, Clinic, Doctor, Review, Specialty, WorkHours } from "./types";
+import type { Article, Clinic, Doctor, Review, Specialty, WorkHours, WalletTransaction } from "./types";
+import { walletRepo } from "./repository";
 
 export const SPECIALTIES_SEED: Specialty[] = [
   { id: "sp-general", slug: "general", name: "پزشک عمومی", icon: "🩺", color: "bg-blue-500" },
@@ -197,3 +198,55 @@ export const ARTICLES_SEED: Article[] = [
     date: "2025-07-06",
   },
 ];
+
+
+// walletRepo.add({
+//   id: "wallet-1",
+//   userEmail: "ali@test.com",
+
+//   type: "deposit",
+
+//   title: "افزایش اعتبار",
+
+//   description: "شارژ اولیه کیف پول",
+
+//   amount: 1000000,
+
+//   createdAt: new Date(
+//     Date.now() - 1000 * 60 * 60 * 24 * 7,
+//   ).toISOString(),
+// });
+
+// walletRepo.add({
+//   id: "wallet-2",
+//   userEmail: "ali@test.com",
+
+//   type: "withdraw",
+
+//   title: "پرداخت هزینه ویزیت",
+
+//   description: "دکتر محمد احمدی",
+
+//   amount: 250000,
+
+//   createdAt: new Date(
+//     Date.now() - 1000 * 60 * 60 * 24 * 3,
+//   ).toISOString(),
+// });
+
+// walletRepo.add({
+//   id: "wallet-3",
+//   userEmail: "ali@test.com",
+
+//   type: "refund",
+
+//   title: "بازگشت وجه",
+
+//   description: "لغو نوبت",
+
+//   amount: 250000,
+
+//   createdAt: new Date(
+//     Date.now() - 1000 * 60 * 60 * 24,
+//   ).toISOString(),
+// });

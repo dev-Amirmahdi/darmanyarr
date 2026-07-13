@@ -57,7 +57,7 @@ function Home() {
                 className="w-full bg-transparent outline-none py-2 text-sm text-foreground placeholder:text-muted-foreground"
               />
             </div>
-            <button type="submit" className="rounded-xl gradient-primary text-primary-foreground font-bold px-5 py-3 text-sm shadow-card">
+            <button type="submit" className="rounded-xl gradient-primary text-primary-foreground font-bold px-5 py-3 text-sm shadow-card cursor-pointer">
               جستجو
             </button>
           </form>

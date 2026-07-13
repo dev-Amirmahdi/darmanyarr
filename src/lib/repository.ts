@@ -1,6 +1,7 @@
 // Repository layer — today reads/writes LocalStorage. Tomorrow: swap for API.
 import { KEYS, storage } from "./storage";
 import { ARTICLES_SEED, SPECIALTIES_SEED, buildClinics, buildDoctors, buildReviews } from "./seed";
+import { parseJDateKey, toGregorian } from "./jalali";
 import type {
   AppUser,
   Appointment,
@@ -12,6 +13,7 @@ import type {
   NotificationItem,
   Review,
   Specialty,
+  WalletTransaction
 } from "./types";
 
 export function ensureSeeded(): void {
@@ -136,6 +138,41 @@ export const appointmentsRepo = {
         a.id !== ignoreId,
     );
   },
+  refreshStatuses() {
+  const all = this.list();
+
+  let changed = false;
+
+  const updated = all.map((item) => {
+    if (item.status !== "confirmed") return item;
+
+    const j = parseJDateKey(item.dateKey);
+    const g = toGregorian(j);
+
+    const appointmentDate = new Date(
+      g.getFullYear(),
+      g.getMonth(),
+      g.getDate(),
+      Number(item.time.split(":")[0]),
+      Number(item.time.split(":")[1]),
+    );
+
+    if (appointmentDate < new Date()) {
+      changed = true;
+
+      return {
+        ...item,
+        status: "completed" as const,
+      };
+    }
+
+    return item;
+  });
+
+  if (changed) {
+      storage.set(KEYS.appointments, updated);
+    }
+  },
   create(a: Appointment): { ok: boolean; error?: string } {
     const all = this.list();
     if (
@@ -225,6 +262,49 @@ export const appointmentsRepo = {
       all.map((a) => (a.id === id ? merged : a)),
     );
     return { ok: true };
+  },
+};
+
+/* -------------------- Wallet -------------------- */
+export const walletRepo = {
+  list(): WalletTransaction[] {
+    return storage.get<WalletTransaction[]>(
+      KEYS.walletTransactions,
+      [],
+    );
+  },
+
+  byUser(email: string): WalletTransaction[] {
+    return this.list()
+      .filter((t) => t.userEmail === email)
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() -
+          new Date(a.createdAt).getTime(),
+      );
+  },
+
+  balance(email: string): number {
+    return this.byUser(email).reduce((sum, item) => {
+      switch (item.type) {
+        case "deposit":
+        case "refund":
+          return sum + item.amount;
+
+        case "withdraw":
+          return sum - item.amount;
+
+        default:
+          return sum;
+      }
+    }, 0);
+  },
+
+  add(transaction: WalletTransaction) {
+    storage.set(KEYS.walletTransactions, [
+      transaction,
+      ...this.list(),
+    ]);
   },
 };
 
@@ -374,3 +454,5 @@ export const chatsRepo = {
     storage.set(KEYS.chats, map);
   },
 };
+
+

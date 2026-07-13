@@ -79,7 +79,7 @@ export type Appointment = {
     gender: "male" | "female";
     notes?: string;
   };
-  status: "confirmed" | "cancelled" | "done";
+  status: "confirmed" | "completed" | "cancelled";
   createdAt: string;
 };
 
@@ -119,4 +119,14 @@ export type AppUser = {
 export type DoctorSession = {
   doctorId: string;
   name: string;
+};
+
+export type WalletTransaction = {
+  id: string;
+  userEmail: string;
+  type: "deposit" | "withdraw" | "refund";
+  title: string;
+  description?: string;
+  amount: number;
+  createdAt: string;
 };
