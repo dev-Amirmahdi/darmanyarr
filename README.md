@@ -2,6 +2,12 @@
 
 A modern doctor appointment booking application built with **React**, **TanStack Router**, **TypeScript**, and **Tailwind CSS**. The project is currently frontend-only and uses LocalStorage to simulate backend functionality.
 
+## 🌐 Live Demo
+
+Try the application online:
+
+👉 **https://darmanyarapp.vercel.app/
+
 ## ✨ Features
 
 - 🔐 User Authentication (Login & Register)
